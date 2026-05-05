@@ -10,8 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "lucide-react": "^1.14.0",
+    "mapbox-gl": "^3.23.0",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "react-map-gl": "^8.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

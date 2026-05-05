@@ -3,9 +3,15 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import routeRoutes from './routes/routeRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import initDb from './config/initDb.js';
+import './config/db.js'; // Initialize MySQL connection pool
 
 // Load environment variables
 dotenv.config();
+
+// Initialize Database Tables
+initDb();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,6 +23,7 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/routes', routeRoutes);
+app.use('/api/auth', authRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
