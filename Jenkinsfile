@@ -7,12 +7,12 @@ kind: Pod
 spec:
   containers:
   - name: node
-    image: node:20.18-alpine
+    image: public.ecr.aws/docker/library/node:20.18-alpine
     command:
     - cat
     tty: true
   - name: docker
-    image: docker:27.5-cli
+    image: public.ecr.aws/docker/library/docker:27.5-cli
     command:
     - cat
     tty: true
