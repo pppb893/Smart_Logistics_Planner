@@ -46,23 +46,23 @@ const RegisterModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
       if (response.ok) {
         if (isLogin) {
-          setMessage('Login successful!');
+          setMessage('เข้าสู่ระบบสำเร็จ!');
           localStorage.setItem('token', data.token);
           // Pass user data to App.jsx
           if (onLoginSuccess) onLoginSuccess(data.user);
           setTimeout(() => onClose(), 1000);
         } else {
-          setMessage('Registration successful! Please login.');
+          setMessage('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ');
           // Switch to login view
           setIsLogin(true);
           // Clear password but keep email
           setFormData(prev => ({ ...prev, password: '' }));
         }
       } else {
-        setMessage(data.message || 'Authentication failed');
+        setMessage(data.message || 'การยืนยันตัวตนล้มเหลว');
       }
     } catch (error) {
-      setMessage('Network error. Is the backend running?');
+      setMessage('เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่');
     } finally {
       setLoading(false);
     }
@@ -79,9 +79,9 @@ const RegisterModal = ({ isOpen, onClose, onLoginSuccess }) => {
         <button className="close-btn" onClick={onClose}>
           <X size={20} />
         </button>
-        <h2>{isLogin ? 'Welcome Back' : 'Create an Account'}</h2>
+        <h2>{isLogin ? 'ยินดีต้อนรับกลับ' : 'สร้างบัญชีใหม่'}</h2>
         <p className="subtitle">
-          {isLogin ? 'Login to view your saved routes.' : 'Join Smart Logistics to save your routes.'}
+          {isLogin ? 'เข้าสู่ระบบเพื่อดูเส้นทางที่บันทึกไว้' : 'เข้าร่วม Smart Logistics เพื่อบันทึกเส้นทางของคุณ'}
         </p>
         
         {message && <div className={`message ${message.includes('successful') ? 'success' : 'error'}`}>{message}</div>}
@@ -93,7 +93,7 @@ const RegisterModal = ({ isOpen, onClose, onLoginSuccess }) => {
               <input 
                 type="text" 
                 name="username" 
-                placeholder="Username" 
+                placeholder="ชื่อผู้ใช้" 
                 required={!isLogin}
                 value={formData.username}
                 onChange={handleChange}
@@ -105,7 +105,7 @@ const RegisterModal = ({ isOpen, onClose, onLoginSuccess }) => {
             <input 
               type="email" 
               name="email" 
-              placeholder="Email" 
+              placeholder="อีเมล" 
               required 
               value={formData.email}
               onChange={handleChange}
@@ -116,21 +116,21 @@ const RegisterModal = ({ isOpen, onClose, onLoginSuccess }) => {
             <input 
               type="password" 
               name="password" 
-              placeholder="Password" 
+              placeholder="รหัสผ่าน" 
               required 
               value={formData.password}
               onChange={handleChange}
             />
           </div>
           <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? 'Processing...' : (isLogin ? 'Login' : 'Register Now')}
+            {loading ? 'กำลังดำเนินการ...' : (isLogin ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก')}
           </button>
         </form>
 
         <p className="toggle-text">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          {isLogin ? 'ยังไม่มีบัญชี? ' : 'มีบัญชีอยู่แล้ว? '}
           <span className="toggle-link" onClick={toggleMode}>
-            {isLogin ? 'Register here' : 'Login here'}
+            {isLogin ? 'สมัครสมาชิกที่นี่' : 'เข้าสู่ระบบที่นี่'}
           </span>
         </p>
       </div>

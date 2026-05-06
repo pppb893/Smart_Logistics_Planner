@@ -21,9 +21,10 @@ export const getWeather = async (lat, lon) => {
         units: 'metric',
       },
     });
+    console.log(`[Weather Fetch Success] Lat: ${lat}, Lon: ${lon} -> ${response.data.name}`);
     return response.data;
   } catch (error) {
-    console.error('Weather API Error:', error.response?.data || error.message);
+    console.error(`[Weather API Error] Lat: ${lat}, Lon: ${lon} - `, error.response?.data || error.message);
     return null; // Return null if weather fails for a point
   }
 };
@@ -38,9 +39,11 @@ export const isWeatherBad = (weatherData) => {
   const main = weatherData.weather[0].main.toLowerCase();
   const description = weatherData.weather[0].description.toLowerCase();
   
-  // Criteria for bad weather (Customizable)
-  const severeConditions = ['thunderstorm', 'tornado', 'squall', 'ash'];
-  const heavyRain = description.includes('heavy') || description.includes('extreme');
+  console.log(`[Weather Check] ${weatherData.name}: ${main} (${description})`);
 
-  return severeConditions.includes(main) || heavyRain;
+  // Only flag genuinely severe conditions that endanger truck drivers
+  const severeConditions = ['thunderstorm', 'tornado', 'squall', 'ash'];
+  const extremeRain = description.includes('heavy') || description.includes('extreme');
+
+  return severeConditions.includes(main) || extremeRain;
 };

@@ -120,3 +120,277 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Wide Panel for List View */
+.shipments-panel.wide-panel {
+  width: 420px;
+}
+
+.panel-header.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header.flex-start {
+  display: flex;
+  align-items: center;
+}
+
+.mr-2 { margin-right: 8px; }
+.mt-1 { margin-top: 16px; }
+
+.icon-btn.action {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.icon-btn.action:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  text-align: center;
+  color: rgba(255,255,255,0.6);
+}
+
+.empty-icon {
+  color: rgba(255,255,255,0.2);
+  margin-bottom: 16px;
+}
+
+/* Shipment Cards */
+.shipments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.shipment-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.ship-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.truck-plate {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.truck-color-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.ship-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn.small {
+  padding: 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+}
+
+.icon-btn.small:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.icon-btn.small.danger:hover {
+  background: rgba(255,82,82,0.2);
+  color: #ff5252;
+}
+
+.icon-btn.small .dim {
+  opacity: 0.5;
+}
+
+.ship-route-info {
+  margin-bottom: 16px;
+}
+
+.route-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.endpoint {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.route-safety-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.route-safety-badge.safe {
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.route-safety-badge.danger {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* Danger badge expanded content */
+.danger-badge-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.danger-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.danger-badge-sub {
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+/* Storm alert box */
+.storm-alert-box {
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.25);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.storm-icon {
+  font-size: 3rem;
+  line-height: 1;
+  animation: pulse-storm 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-storm {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.storm-alert-box h3 {
+  margin: 0;
+  color: #ff5252;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.storm-alert-box p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.storm-sub {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.82rem !important;
+}
+
+/* Storm action buttons */
+.storm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.danger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff5252, #d32f2f);
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.danger-btn:hover { opacity: 0.9; }
+.danger-btn:active { transform: translateY(1px); }
+
+.cancel-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

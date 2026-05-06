@@ -16,7 +16,28 @@ const initDb = async () => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      
+
+      // Create Shipments Table
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS shipments (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id INT NOT NULL,
+          truck VARCHAR(100) NOT NULL,
+          origin VARCHAR(255) NOT NULL,
+          destination VARCHAR(255) NOT NULL,
+          distance DECIMAL(10,1),
+          duration VARCHAR(20),
+          color VARCHAR(20),
+          is_safe BOOLEAN DEFAULT TRUE,
+          visible BOOLEAN DEFAULT TRUE,
+          route_geometry JSON,
+          route_distance DOUBLE,
+          route_duration DOUBLE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
       console.log('✅ Database tables initialized successfully.');
       connection.release();
       break; // Exit loop on success

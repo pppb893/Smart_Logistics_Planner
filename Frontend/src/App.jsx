@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Package, Navigation, Search, Menu, User, Bell, ChevronDown, LogOut, Settings } from 'lucide-react';
 import RegisterModal from './components/RegisterModal';
 import ShipmentsPanel from './components/ShipmentsPanel';
+import Dashboard from './components/Dashboard';
 import './App.css';
 
 function App() {
@@ -15,57 +16,201 @@ function App() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('live_map');
   
-  // User Authentication State
-  const [user, setUser] = useState(null);
+  // User Authentication State — restore from localStorage on refresh
+  const [user, setUser] = useState(() => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      // Decode the JWT payload (middle part) without verifying — backend will verify on real calls
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      // If token is expired, clear it
+      if (payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem('token');
+        return null;
+      }
+      // We only have id/email in the token; fetch username from storage if saved
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : { id: payload.id, email: payload.email };
+    } catch {
+      return null;
+    }
+  });
   const [showDropdown, setShowDropdown] = useState(false);
 
   // Weather Radar State
   const [showRadar, setShowRadar] = useState(false);
+  // Traffic Layer State
+  const [showTraffic, setShowTraffic] = useState(false);
 
-  const handleRouteFound = (route, details) => {
-    if (!map.current) return;
+  // Shipments State
+  const [shipments, setShipments] = useState([]);
+  const addedLayersRef = useRef([]);
+  const colorIndexRef = useRef(0);
 
-    // Remove existing route if any
-    if (map.current.getSource('route')) {
-      map.current.removeLayer('route-line');
-      map.current.removeSource('route');
+  // Load shipments from DB when user logs in
+  useEffect(() => {
+    if (!user) {
+      setShipments([]);
+      colorIndexRef.current = 0;
+      return;
     }
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:5000/api/shipments', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setShipments(data);
+          colorIndexRef.current = data.length;
+        }
+      })
+      .catch(err => console.error('Failed to load shipments:', err));
+  }, [user]);
 
-    // Add route line
-    map.current.addSource('route', {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: {},
-        geometry: route.geometry
+  // Distinct route colors — visible on both light and dark map
+  const TRUCK_COLORS = [
+    '#4facfe', // sky blue
+    '#f6d365', // golden yellow
+    '#a18cd1', // soft purple
+    '#fd7043', // deep orange
+    '#26c6da', // cyan
+    '#ef5350', // bright red
+    '#66bb6a', // green
+    '#ff8a65', // salmon
+    '#ba68c8', // lavender
+    '#ffca28', // amber
+  ];
+
+  // Effect to manage Mapbox route layers when shipments change
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    // 1. Clean up all previously added layers
+    addedLayersRef.current.forEach(id => {
+      if (map.current.getLayer(`route-storm-${id}`)) map.current.removeLayer(`route-storm-${id}`);
+      if (map.current.getLayer(`route-line-${id}`)) map.current.removeLayer(`route-line-${id}`);
+      if (map.current.getSource(`route-${id}`)) map.current.removeSource(`route-${id}`);
+    });
+    addedLayersRef.current = [];
+
+    // 2. Draw all currently visible shipments
+    const newAddedLayers = [];
+    const allCoordinates = [];
+
+    shipments.forEach(ship => {
+      if (!ship.visible) return;
+
+      const sourceId = `route-${ship.id}`;
+      const layerId = `route-line-${ship.id}`;
+      newAddedLayers.push(ship.id);
+
+      map.current.addSource(sourceId, {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: ship.route.geometry }
+      });
+
+      // Main route line in the truck's unique color
+      map.current.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': ship.color,
+          'line-width': 6,
+          'line-opacity': 0.9
+        }
+      });
+
+      // Dashed red storm-warning overlay
+      if (!ship.isSafe) {
+        map.current.addLayer({
+          id: `route-storm-${ship.id}`,
+          type: 'line',
+          source: sourceId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#ff5252',
+            'line-width': 3,
+            'line-opacity': 0.8,
+            'line-dasharray': [2, 3]
+          }
+        });
       }
+
+      // Collect coordinates for bounds fitting
+      allCoordinates.push(...ship.route.geometry.coordinates);
     });
 
-    map.current.addLayer({
-      id: 'route-line',
-      type: 'line',
-      source: 'route',
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': route.isSafe ? '#00e676' : '#ff5252',
-        'line-width': 6,
-        'line-opacity': 0.8
-      }
-    });
+    addedLayersRef.current = newAddedLayers;
 
-    // Fit map to route bounds
-    const coordinates = route.geometry.coordinates;
-    const bounds = new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]);
-    for (const coord of coordinates) {
-      bounds.extend(coord);
+    // 3. Fit map bounds if there are visible routes
+    if (allCoordinates.length > 0) {
+      const bounds = new mapboxgl.LngLatBounds(allCoordinates[0], allCoordinates[0]);
+      for (const coord of allCoordinates) {
+        bounds.extend(coord);
+      }
+      map.current.fitBounds(bounds, { padding: 80, maxZoom: 14 });
     }
-    map.current.fitBounds(bounds, { padding: 80, maxZoom: 14 });
-    
-    // Switch back to live map view automatically
-    setActiveTab('live_map');
+  }, [shipments]);
+
+  const handleAddShipment = async (route, details) => {
+    const distanceKm = (route.distance / 1000).toFixed(1);
+    const durationHrs = Math.floor(route.duration / 3600);
+    const durationMins = Math.floor((route.duration % 3600) / 60);
+
+    // Assign next unique color from palette
+    const color = TRUCK_COLORS[colorIndexRef.current % TRUCK_COLORS.length];
+    colorIndexRef.current += 1;
+
+    const newShipment = {
+      id: Date.now().toString(),
+      ...details,
+      route: route,
+      color: color,
+      distance: distanceKm,
+      duration: `${durationHrs > 0 ? durationHrs + 'h ' : ''}${durationMins}m`,
+      isSafe: route.isSafe,
+      visible: true
+    };
+
+    // Persist to DB
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('http://localhost:5000/api/shipments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newShipment)
+      });
+    } catch (err) {
+      console.error('Failed to save shipment:', err);
+    }
+
+    setShipments(prev => [...prev, newShipment]);
+  };
+
+  const handleToggleShipment = (id) => {
+    setShipments(prev => prev.map(ship => 
+      ship.id === id ? { ...ship, visible: !ship.visible } : ship
+    ));
+    const token = localStorage.getItem('token');
+    fetch(`http://localhost:5000/api/shipments/${id}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).catch(err => console.error('Failed to toggle shipment:', err));
+  };
+
+  const handleDeleteShipment = (id) => {
+    setShipments(prev => prev.filter(ship => ship.id !== id));
+    const token = localStorage.getItem('token');
+    fetch(`http://localhost:5000/api/shipments/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).catch(err => console.error('Failed to delete shipment:', err));
   };
 
   useEffect(() => {
@@ -129,10 +274,48 @@ function App() {
     }
   }, [showRadar]);
 
+  // Toggle Mapbox Traffic Layer
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+    if (showTraffic) {
+      if (!map.current.getSource('traffic-source')) {
+        map.current.addSource('traffic-source', {
+          type: 'vector',
+          url: 'mapbox://mapbox.mapbox-traffic-v1'
+        });
+        map.current.addLayer({
+          id: 'traffic-layer',
+          type: 'line',
+          source: 'traffic-source',
+          'source-layer': 'traffic',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-width': 3,
+            'line-opacity': 0.85,
+            'line-color': [
+              'match', ['get', 'congestion'],
+              'low',      '#00e676',
+              'moderate', '#ffb300',
+              'heavy',    '#ff5252',
+              'severe',   '#b71c1c',
+              '#adb5bd'
+            ]
+          }
+        });
+      } else {
+        map.current.setLayoutProperty('traffic-layer', 'visibility', 'visible');
+      }
+    } else {
+      if (map.current.getLayer('traffic-layer')) {
+        map.current.setLayoutProperty('traffic-layer', 'visibility', 'none');
+      }
+    }
+  }, [showTraffic]);
 
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setShowDropdown(false);
   };
@@ -151,21 +334,35 @@ function App() {
             className={activeTab === 'live_map' ? 'active' : ''}
             onClick={(e) => { e.preventDefault(); setActiveTab('live_map'); }}
           >
-            Live Map
+            แผนที่สด
           </a>
           <a 
             href="#" 
             className={activeTab === 'shipments' ? 'active' : ''}
             onClick={(e) => { e.preventDefault(); setActiveTab('shipments'); }}
           >
-            Shipments
+            การขนส่ง
+          </a>
+          <a 
+            href="#" 
+            className={activeTab === 'dashboard' ? 'active' : ''}
+            onClick={(e) => { e.preventDefault(); setActiveTab('dashboard'); }}
+          >
+            แดชบอร์ด
           </a>
           <a 
             href="#" 
             className={showRadar ? 'active' : ''} 
             onClick={(e) => { e.preventDefault(); setShowRadar(!showRadar); }}
           >
-            {showRadar ? 'Hide Radar' : 'Weather Alerts'}
+            {showRadar ? 'ซ่อนเรดาร์' : 'แจ้งเตือนสภาพอากาศ'}
+          </a>
+          <a 
+            href="#" 
+            className={showTraffic ? 'active' : ''} 
+            onClick={(e) => { e.preventDefault(); setShowTraffic(!showTraffic); }}
+          >
+            {showTraffic ? 'ซ่อนจราจร' : 'จราจรสด'}
           </a>
         </div>
         <div className="top-bar-right">
@@ -185,12 +382,12 @@ function App() {
                 <div className="profile-dropdown glassmorphism">
                   <div className="dropdown-item">
                     <Settings size={16} />
-                    <span>My Profile</span>
+                    <span>โปรไฟล์ของฉัน</span>
                   </div>
                   <div className="dropdown-divider"></div>
                   <div className="dropdown-item logout-btn" onClick={handleLogout}>
                     <LogOut size={16} />
-                    <span>Logout</span>
+                    <span>ออกจากระบบ</span>
                   </div>
                 </div>
               )}
@@ -207,16 +404,40 @@ function App() {
 
         {/* Shipments Panel */}
         {activeTab === 'shipments' && (
-          <ShipmentsPanel 
-            onClose={() => setActiveTab('live_map')}
-            onRouteFound={handleRouteFound}
-          />
+          user ? (
+            <ShipmentsPanel 
+              shipments={shipments}
+              onRouteFound={handleAddShipment}
+              onToggleShipment={handleToggleShipment}
+              onDeleteShipment={handleDeleteShipment}
+              onClose={() => setActiveTab('live_map')}
+            />
+          ) : (
+            <div className="shipments-panel glassmorphism login-required-panel">
+              <div className="empty-state">
+                <User size={48} className="empty-icon" />
+                <h3>ต้องเข้าสู่ระบบ</h3>
+                <p>กรุณาเข้าสู่ระบบเพื่อจัดการการขนส่งและดูข้อมูลรถทั้งหมด</p>
+                <button 
+                  className="primary-btn mt-1"
+                  onClick={() => setIsRegisterOpen(true)}
+                >
+                  เข้าสู่ระบบ / สมัครสมาชิก
+                </button>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Dashboard Full Page */}
+        {activeTab === 'dashboard' && (
+          <Dashboard shipments={shipments} user={user} />
         )}
 
         {/* Weather Legend */}
         {showRadar && (
           <div className="weather-legend">
-            <h4>Precipitation Intensity</h4>
+            <h4>ความเข้มของฝน</h4>
             <div className="legend-gradient">
               <div className="color-segment" title="Light Rain (< 2 mm/h)" data-tooltip="Light Rain (< 2 mm/h)"></div>
               <div className="color-segment" title="Moderate Rain (2-10 mm/h)" data-tooltip="Moderate Rain (2-10 mm/h)"></div>
@@ -225,10 +446,23 @@ function App() {
               <div className="color-segment" title="Extreme (> 100 mm/h)" data-tooltip="Extreme (> 100 mm/h)"></div>
             </div>
             <div className="legend-labels">
-              <span>Light</span>
-              <span>Moderate</span>
-              <span>Heavy</span>
-              <span>Extreme</span>
+              <span>เบา</span>
+              <span>ปานกลาง</span>
+              <span>หนัก</span>
+              <span>รุนแรง</span>
+            </div>
+          </div>
+        )}
+
+        {/* Traffic Legend */}
+        {showTraffic && (
+          <div className="traffic-legend">
+            <h4>🚗 ความหนาแน่นของจราจร</h4>
+            <div className="traffic-legend-items">
+              <span><span className="tl-dot" style={{background:'#00e676'}}/> น้อย</span>
+              <span><span className="tl-dot" style={{background:'#ffb300'}}/> ปานกลาง</span>
+              <span><span className="tl-dot" style={{background:'#ff5252'}}/> หนาแน่น</span>
+              <span><span className="tl-dot" style={{background:'#b71c1c'}}/> หนาแน่นมาก</span>
             </div>
           </div>
         )}
@@ -237,7 +471,10 @@ function App() {
       <RegisterModal 
         isOpen={isRegisterOpen} 
         onClose={() => setIsRegisterOpen(false)} 
-        onLoginSuccess={(userData) => setUser(userData)}
+        onLoginSuccess={(userData) => {
+          localStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+        }}
       />
     </div>
   );

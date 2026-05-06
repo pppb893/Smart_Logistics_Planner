@@ -413,3 +413,112 @@
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.6);
 }
+
+/* Route Info Card */
+.route-info-card {
+  position: absolute;
+  top: 90px;
+  right: 20px;
+  background: rgba(15, 20, 25, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  width: 280px;
+  z-index: 10;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: white;
+  animation: slideInRight 0.4s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.route-info-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 12px;
+}
+
+.route-stat {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.route-stat span {
+  color: rgba(255,255,255,0.6);
+}
+
+.route-stat strong {
+  color: #fff;
+}
+
+.route-safety {
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.route-safety.safe {
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.route-safety.danger {
+  background: rgba(255, 82, 82, 0.15);
+  color: #ff5252;
+  border: 1px solid rgba(255, 82, 82, 0.3);
+}
+
+/* Traffic Legend */
+.traffic-legend {
+  position: absolute;
+  bottom: 30px;
+  left: 360px;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 18px;
+  z-index: 10;
+  color: white;
+  animation: slideIn 0.4s ease-out forwards;
+}
+
+.traffic-legend h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.traffic-legend-items {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.75);
+}
+
+.tl-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+

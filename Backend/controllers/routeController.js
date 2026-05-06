@@ -16,13 +16,19 @@ export const getRecommendedRoute = async (req, res) => {
     const evaluatedRoutes = await Promise.all(routes.map(async (route, index) => {
       const coordinates = route.geometry.coordinates;
       
-      // Sample 3 points: Start, Middle, End
-      const midIndex = Math.floor(coordinates.length / 2);
-      const samplePoints = [
-        coordinates[0],
-        coordinates[midIndex],
-        coordinates[coordinates.length - 1]
-      ];
+      // Sample 10 evenly spaced points along the route
+      const samplePoints = [];
+      const numSamples = 10;
+      const step = Math.max(1, Math.floor(coordinates.length / numSamples));
+      
+      for (let i = 0; i < coordinates.length; i += step) {
+        samplePoints.push(coordinates[i]);
+      }
+      
+      // Ensure the exact destination is always checked
+      if (samplePoints[samplePoints.length - 1] !== coordinates[coordinates.length - 1]) {
+         samplePoints.push(coordinates[coordinates.length - 1]);
+      }
 
       let weatherIssues = [];
       let isSafe = true;
