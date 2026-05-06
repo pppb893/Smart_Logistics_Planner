@@ -91,8 +91,10 @@ spec:
 
     post {
         always {
-            container('docker') {
-                sh 'docker logout || true'
+            node(null) { // This ensures we have a node context for post actions
+                container('docker') {
+                    sh 'docker logout || true'
+                }
             }
         }
     }
