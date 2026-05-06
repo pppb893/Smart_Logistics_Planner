@@ -1,7 +1,7 @@
 import pool from './db.js';
 
 const initDb = async () => {
-  let retries = 5;
+  let retries = 20;
   while (retries > 0) {
     try {
       const connection = await pool.getConnection();
