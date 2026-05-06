@@ -7,12 +7,12 @@ kind: Pod
 spec:
   containers:
   - name: node
-    image: node:20-alpine
+    image: node:20.18-alpine
     command:
     - cat
     tty: true
   - name: docker
-    image: docker:latest
+    image: docker:27.5-cli
     command:
     - cat
     tty: true
