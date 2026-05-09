@@ -89,7 +89,7 @@ spec:
                         WEA2="4ed5306083e62dbd7b"
                         echo "VITE_MAPBOX_ACCESS_TOKEN=${MAP1}${MAP2}" > .env
                         echo "VITE_OPENWEATHER_API_KEY=${WEA1}${WEA2}" >> .env
-                        echo "VITE_API_URL=" >> .env
+                        echo "VITE_API_URL=/" >> .env
                         echo "NODE_ENV=production" >> .env
                         '''
                     }
