@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: smart-logistics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: nopparujjia/smart-logistics-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_USER
+          value: "dbuser"
+        - name: DB_PASSWORD
+          value: "dbpassword"
+        - name: DB_NAME
+          value: "logistics_db"
+        - name: PORT
+          value: "5000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: smart-logistics
+spec:
+  ports:
+  - port: 5000
+    targetPort: 5000
+  selector:
+    app: backend

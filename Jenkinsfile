@@ -90,5 +90,22 @@ spec:
                 }
             }
         }
+
+        stage('Deploy to K8s') {
+            steps {
+                container('docker') {
+                    echo 'Deploying to Kubernetes...'
+                    sh 'kubectl apply -f k8s/app/namespace.yaml'
+                    sh 'kubectl apply -f k8s/app/mysql.yaml'
+                    sh 'kubectl apply -f k8s/app/backend.yaml'
+                    sh 'kubectl apply -f k8s/app/frontend.yaml'
+                    sh 'kubectl apply -f k8s/app/ingress.yaml'
+                    
+                    echo 'Waiting for deployment to complete...'
+                    sh 'kubectl rollout status deployment/backend -n smart-logistics'
+                    sh 'kubectl rollout status deployment/frontend -n smart-logistics'
+                }
+            }
+        }
     }
 }

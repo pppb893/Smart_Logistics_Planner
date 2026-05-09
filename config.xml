@@ -1,0 +1,67 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<hudson>
+  <disabledAdministrativeMonitors/>
+  <version>2.541.3</version>
+  <numExecutors>2</numExecutors>
+  <mode>NORMAL</mode>
+  <useSecurity>false</useSecurity>
+  <authorizationStrategy class="hudson.security.FullControlOnceLoggedInAuthorizationStrategy">
+    <denyAnonymousReadAccess>true</denyAnonymousReadAccess>
+  </authorizationStrategy>
+  <securityRealm class="hudson.security.HudsonPrivateSecurityRealm">
+    <disableSignup>true</disableSignup>
+    <enableCaptcha>false</enableCaptcha>
+  </securityRealm>
+  <disableRememberMe>false</disableRememberMe>
+  <projectNamingStrategy class="jenkins.model.ProjectNamingStrategy$DefaultProjectNamingStrategy"/>
+  <workspaceDir>${JENKINS_HOME}/workspace/${ITEM_FULL_NAME}</workspaceDir>
+  <buildsDir>${ITEM_ROOTDIR}/builds</buildsDir>
+  <jdks/>
+  <viewsTabBar class="hudson.views.DefaultViewsTabBar"/>
+  <myViewsTabBar class="hudson.views.DefaultMyViewsTabBar"/>
+  <clouds>
+    <org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud plugin="kubernetes@4423.vb_59f230b_ce53">
+      <name>kubernetes</name>
+      <templates/>
+      <serverUrl>https://kubernetes.default.svc</serverUrl>
+      <useJenkinsProxy>false</useJenkinsProxy>
+      <skipTlsVerify>false</skipTlsVerify>
+      <addMasterProxyEnvVars>false</addMasterProxyEnvVars>
+      <capOnlyOnAlivePods>false</capOnlyOnAlivePods>
+      <namespace>jenkins</namespace>
+      <restrictedPssSecurityContext>false</restrictedPssSecurityContext>
+      <webSocket>false</webSocket>
+      <directConnection>false</directConnection>
+      <jenkinsUrl>http://jenkins-service.jenkins.svc.cluster.local:8080</jenkinsUrl>
+      <containerCap>10</containerCap>
+      <retentionTimeout>5</retentionTimeout>
+      <connectTimeout>5</connectTimeout>
+      <readTimeout>15</readTimeout>
+      <podLabels/>
+      <usageRestricted>false</usageRestricted>
+      <maxRequestsPerHost>32</maxRequestsPerHost>
+      <waitForPodSec>600</waitForPodSec>
+      <podRetention class="org.csanchez.jenkins.plugins.kubernetes.pod.retention.Never"/>
+      <traits/>
+    </org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud>
+  </clouds>
+  <scmCheckoutRetryCount>0</scmCheckoutRetryCount>
+  <views>
+    <hudson.model.AllView>
+      <owner class="hudson" reference="../../.."/>
+      <name>all</name>
+      <filterExecutors>false</filterExecutors>
+      <filterQueue>false</filterQueue>
+      <properties class="hudson.model.View$PropertyList"/>
+    </hudson.model.AllView>
+  </views>
+  <primaryView>all</primaryView>
+  <slaveAgentPort>50000</slaveAgentPort>
+  <label></label>
+  <crumbIssuer class="hudson.security.csrf.DefaultCrumbIssuer">
+    <excludeClientIPFromCrumb>false</excludeClientIPFromCrumb>
+  </crumbIssuer>
+  <nodeProperties/>
+  <globalNodeProperties/>
+  <nodeRenameMigrationNeeded>false</nodeRenameMigrationNeeded>
+</hudson>
