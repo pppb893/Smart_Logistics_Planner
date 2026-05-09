@@ -108,7 +108,8 @@ function App() {
       return;
     }
     const token = localStorage.getItem('token');
-    fetch('http://localhost:5000/api/shipments', {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/shipments`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -256,7 +257,8 @@ function App() {
     // Persist to DB
     try {
       const token = localStorage.getItem('token');
-      await fetch('http://localhost:5000/api/shipments', {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      await fetch(`${apiUrl}/api/shipments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -276,7 +278,8 @@ function App() {
       ship.id === id ? { ...ship, visible: !ship.visible } : ship
     ));
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:5000/api/shipments/${id}/toggle`, {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/shipments/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}` }
     }).catch(err => console.error('Failed to toggle shipment:', err));
@@ -293,7 +296,8 @@ function App() {
     delete simProgressRef.current[id];
 
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:5000/api/shipments/${id}`, {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/shipments/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     }).catch(err => console.error('Failed to delete shipment:', err));

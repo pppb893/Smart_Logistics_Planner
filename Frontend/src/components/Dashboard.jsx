@@ -23,7 +23,8 @@ const reverseGeocode = async (lon, lat) => {
 // Uses forecast endpoint with ETA timestamp
 const fetchForecastAt = async (lat, lon, timestamp) => {
   try {
-    const r = await fetch(`http://localhost:5000/api/routes/forecast?lat=${lat}&lon=${lon}&timestamp=${timestamp}`);
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const r = await fetch(`${apiUrl}/api/routes/forecast?lat=${lat}&lon=${lon}&timestamp=${timestamp}`);
     return r.ok ? await r.json() : null;
   } catch { return null; }
 };
