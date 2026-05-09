@@ -44,11 +44,23 @@ export const getRecommendedRoute = async (req, res) => {
         }
       }
 
+      let borderCrossings = 0;
+      let borderProgresses = [];
+      const distanceKm = route.distance / 1000;
+      
+      if (distanceKm > 500) {
+         borderCrossings = Math.floor(distanceKm / 800);
+         for (let i = 1; i <= borderCrossings; i++) {
+            borderProgresses.push(i / (borderCrossings + 1));
+         }
+      }
+
       return {
         id: index,
         duration: route.duration, // in seconds
         distance: route.distance, // in meters
         geometry: route.geometry,
+        borderCrossings: borderCrossings,
         isSafe: isSafe,
         weatherIssues: weatherIssues,
         summary: `Route via ${route.legs[0].summary || 'Main Road'}`

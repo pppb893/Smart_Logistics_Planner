@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { Truck, Navigation, AlertTriangle, ShieldCheck, Plus, Eye, EyeOff, Trash2, ArrowLeft } from 'lucide-react';
+import { Truck, Navigation, AlertTriangle, ShieldCheck, Plus, Eye, EyeOff, Trash2, ArrowLeft, Play, Pause, FastForward, RotateCcw } from 'lucide-react';
 import LocationInput from './LocationInput';
 import './ShipmentsPanel.css';
 
-const ShipmentsPanel = ({ shipments = [], onRouteFound, onToggleShipment, onDeleteShipment, onClose }) => {
+const ShipmentsPanel = ({ 
+  shipments = [], 
+  onAddShipment, 
+  onToggleShipment, 
+  onDeleteShipment,
+  truckSimStates = {},
+  onToggleSimulation,
+  onChangeSimSpeed,
+  onResetSimulation,
+  onClose 
+}) => {
   const [view, setView] = useState('list'); // 'list' | 'form'
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
@@ -43,7 +53,7 @@ const ShipmentsPanel = ({ shipments = [], onRouteFound, onToggleShipment, onDele
           // Don't add yet — show storm confirmation screen
           setStormWarning({ route, details: { origin: origin.name, destination: destination.name, truck: truckPlate } });
         } else {
-          onRouteFound(route, {
+          onAddShipment(route, {
             origin: origin.name,
             destination: destination.name,
             truck: truckPlate
@@ -85,7 +95,7 @@ const ShipmentsPanel = ({ shipments = [], onRouteFound, onToggleShipment, onDele
               <button 
                 className="danger-btn"
                 onClick={() => {
-                  onRouteFound(stormWarning.route, stormWarning.details);
+                  onAddShipment(stormWarning.route, stormWarning.details);
                   setStormWarning(null);
                   setOrigin(null);
                   setDestination(null);
@@ -169,6 +179,34 @@ const ShipmentsPanel = ({ shipments = [], onRouteFound, onToggleShipment, onDele
                         <div className="danger-badge-sub">ทุกเส้นทางผ่านพายุ — ขับด้วยความระมัดระวัง</div>
                       </div>
                     )}
+                  </div>
+                  <div className="sim-card-controls">
+                    <button 
+                      className={`icon-btn small sim-play-icon ${truckSimStates[ship.id]?.isPlaying ? 'active' : ''}`}
+                      onClick={() => onToggleSimulation(ship.id)}
+                      title={truckSimStates[ship.id]?.isPlaying ? "หยุดจำลอง" : "เริ่มจำลอง"}
+                    >
+                      {truckSimStates[ship.id]?.isPlaying ? <Pause size={16} color="#ff5252"/> : <Play size={16} color="#00e676"/>}
+                    </button>
+                    <button 
+                      className="icon-btn small"
+                      onClick={() => onResetSimulation(ship.id)}
+                      title="รีเซ็ต"
+                    >
+                      <RotateCcw size={16} />
+                    </button>
+                    <div className="sim-speed-select">
+                      <FastForward size={14} />
+                      <select 
+                        value={truckSimStates[ship.id]?.speed || 600} 
+                        onChange={(e) => onChangeSimSpeed(ship.id, Number(e.target.value))}
+                      >
+                        <option value={1}>1x</option>
+                        <option value={60}>60x</option>
+                        <option value={600}>600x</option>
+                        <option value={3600}>3600x</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               ))

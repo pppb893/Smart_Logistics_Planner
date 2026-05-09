@@ -1,11 +1,56 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Package, Navigation, Search, Menu, User, Bell, ChevronDown, LogOut, Settings } from 'lucide-react';
+import { Package, Navigation, Search, Menu, User, Bell, ChevronDown, LogOut, Settings, Play, Pause, FastForward } from 'lucide-react';
 import RegisterModal from './components/RegisterModal';
 import ShipmentsPanel from './components/ShipmentsPanel';
 import Dashboard from './components/Dashboard';
 import './App.css';
+
+const getCoordinateAlongRoute = (coordinates, progress) => {
+  if (!coordinates || coordinates.length === 0) return null;
+  if (progress <= 0) return coordinates[0];
+  if (progress >= 1) return coordinates[coordinates.length - 1];
+
+  let totalDist = 0;
+  const segments = [];
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const p1 = coordinates[i];
+    const p2 = coordinates[i+1];
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const d = Math.sqrt(dx*dx + dy*dy);
+    totalDist += d;
+    segments.push({ d, accum: totalDist, p1, p2 });
+  }
+
+  const targetDist = totalDist * progress;
+  for (let i = 0; i < segments.length; i++) {
+    if (targetDist <= segments[i].accum || i === segments.length - 1) {
+      const prevAccum = i === 0 ? 0 : segments[i-1].accum;
+      const p = segments[i].d > 0 ? (targetDist - prevAccum) / segments[i].d : 0;
+      const lon = segments[i].p1[0] + (segments[i].p2[0] - segments[i].p1[0]) * p;
+      const lat = segments[i].p1[1] + (segments[i].p2[1] - segments[i].p1[1]) * p;
+      return [lon, lat];
+    }
+  }
+  return coordinates[coordinates.length - 1];
+};
+
+const getRealisticETA = (drivingSecsRemaining, borderCrossingsCount, additionalWaitSecs = 0) => {
+  const drivingHrs = drivingSecsRemaining / 3600;
+  const restHrs = Math.floor(drivingHrs / 9) * 15;
+  const borderHrs = borderCrossingsCount * 18;
+  const waitHrs = additionalWaitSecs / 3600;
+  const totalHrs = drivingHrs + restHrs + borderHrs + waitHrs;
+  
+  const d = Math.floor(totalHrs / 24);
+  const h = Math.floor(totalHrs % 24);
+  
+  if (d > 0) return `${d} วัน ${h} ชม.`;
+  const m = Math.floor((totalHrs % 1) * 60);
+  return `${h > 0 ? h + ' ชม. ' : ''}${m} นาที`;
+};
 
 function App() {
   const mapContainer = useRef(null);
@@ -46,6 +91,14 @@ function App() {
   const [shipments, setShipments] = useState([]);
   const addedLayersRef = useRef([]);
   const colorIndexRef = useRef(0);
+
+  // Simulation State
+  const [truckSimStates, setTruckSimStates] = useState({});
+  const truckMarkersRef = useRef({});
+  const animationRef = useRef(null);
+  const lastTimeRef = useRef(null);
+  const simProgressRef = useRef({});
+  const simWaitRef = useRef({});
 
   // Load shipments from DB when user logs in
   useEffect(() => {
@@ -156,9 +209,32 @@ function App() {
   }, [shipments]);
 
   const handleAddShipment = async (route, details) => {
-    const distanceKm = (route.distance / 1000).toFixed(1);
-    const durationHrs = Math.floor(route.duration / 3600);
-    const durationMins = Math.floor((route.duration % 3600) / 60);
+    const distanceKmNum = route.distance / 1000;
+    const distanceKm = distanceKmNum.toFixed(1);
+    
+    // 1. Raw Driving Time from Mapbox
+    const baseDurationHrs = route.duration / 3600;
+    
+    // 2. HOS (Hours of Service): Max 9 hours driving, requires 15 hours rest per day
+    const restDays = Math.floor(baseDurationHrs / 9);
+    const restTimeHrs = restDays * 15;
+    
+    // 3. Border / Customs Delays: Use actual border crossings from backend
+    const borderCrossings = route.borderCrossings || 0;
+    const borderDelayHrs = borderCrossings * 18;
+
+    const totalRealDurationHrs = baseDurationHrs + restTimeHrs + borderDelayHrs;
+    
+    const realDays = Math.floor(totalRealDurationHrs / 24);
+    const realHrs = Math.floor(totalRealDurationHrs % 24);
+    
+    let durationString = '';
+    if (realDays > 0) {
+      durationString = `${realDays} วัน ${realHrs} ชม.`;
+    } else {
+      const durationMins = Math.floor((totalRealDurationHrs % 1) * 60);
+      durationString = `${realHrs > 0 ? realHrs + ' ชม. ' : ''}${durationMins} นาที`;
+    }
 
     // Assign next unique color from palette
     const color = TRUCK_COLORS[colorIndexRef.current % TRUCK_COLORS.length];
@@ -170,7 +246,9 @@ function App() {
       route: route,
       color: color,
       distance: distanceKm,
-      duration: `${durationHrs > 0 ? durationHrs + 'h ' : ''}${durationMins}m`,
+      duration: durationString,
+      borderCrossings: borderCrossings,
+      borderProgresses: route.borderProgresses || [],
       isSafe: route.isSafe,
       visible: true
     };
@@ -206,12 +284,225 @@ function App() {
 
   const handleDeleteShipment = (id) => {
     setShipments(prev => prev.filter(ship => ship.id !== id));
+    
+    // Clean up simulation marker if exists
+    if (truckMarkersRef.current[id]) {
+      truckMarkersRef.current[id].remove();
+      delete truckMarkersRef.current[id];
+    }
+    delete simProgressRef.current[id];
+
     const token = localStorage.getItem('token');
     fetch(`http://localhost:5000/api/shipments/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     }).catch(err => console.error('Failed to delete shipment:', err));
   };
+
+  const handleToggleSimulation = (id) => {
+    setTruckSimStates(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isPlaying: !prev[id]?.isPlaying,
+        speed: prev[id]?.speed || 600
+      }
+    }));
+  };
+
+  const handleChangeSimSpeed = (id, speed) => {
+    setTruckSimStates(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        speed
+      }
+    }));
+  };
+
+  const handleResetSimulation = (id) => {
+    setTruckSimStates(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isPlaying: false
+      }
+    }));
+    simProgressRef.current[id] = 0;
+    if (simWaitRef.current) delete simWaitRef.current[id];
+    
+    if (truckMarkersRef.current[id]) {
+      const ship = shipments.find(s => s.id === id);
+      if (ship) {
+        const coords = ship.route.geometry.coordinates;
+        truckMarkersRef.current[id].setLngLat(coords[0]);
+        const markerEl = truckMarkersRef.current[id].getElement();
+        const etaEl = markerEl.querySelector('.sim-eta');
+        const boxEl = markerEl.querySelector('.sim-eta-box');
+        if(etaEl && boxEl) {
+          etaEl.innerText = 'รอการปล่อยรถ...';
+          etaEl.style.color = '#fff';
+          boxEl.style.borderColor = 'rgba(255,255,255,0.2)';
+        }
+      }
+    }
+  };
+
+  // Real-time Simulation Loop
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    const anySimulating = Object.values(truckSimStates).some(s => s.isPlaying);
+
+    if (!anySimulating) {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      lastTimeRef.current = null;
+      return;
+    }
+
+    const animate = (time) => {
+      if (!lastTimeRef.current) lastTimeRef.current = time;
+      const dt = (time - lastTimeRef.current) / 1000; // real seconds
+      lastTimeRef.current = time;
+
+      shipments.forEach(ship => {
+        if (!ship.visible) {
+          if (truckMarkersRef.current[ship.id]) {
+            truckMarkersRef.current[ship.id].remove();
+            delete truckMarkersRef.current[ship.id];
+          }
+          return;
+        }
+
+        const simState = truckSimStates[ship.id] || {};
+        if (!simState.isPlaying && simProgressRef.current[ship.id] === undefined) {
+           return; // Not playing and hasn't started yet
+        }
+
+        if (simProgressRef.current[ship.id] === undefined) {
+          simProgressRef.current[ship.id] = 0;
+        }
+
+        if (!simWaitRef.current) simWaitRef.current = {};
+        if (!simWaitRef.current[ship.id]) {
+          simWaitRef.current[ship.id] = { isWaiting: false, waitTimeLeft: 0, clearedBorders: [] };
+        }
+
+        let waitState = simWaitRef.current[ship.id];
+        let progress = simProgressRef.current[ship.id];
+        
+        if (simState.isPlaying && progress < 1) {
+          const simDt = dt * (simState.speed || 600);
+          
+          if (waitState.isWaiting) {
+             waitState.waitTimeLeft -= simDt;
+             if (waitState.waitTimeLeft <= 0) {
+                waitState.isWaiting = false;
+                waitState.waitTimeLeft = 0;
+             }
+          } else {
+             const prevProgress = progress;
+             progress += simDt / ship.route.duration;
+             if (progress > 1) progress = 1;
+
+             if (ship.borderCrossings === undefined) {
+               const distKm = parseFloat(ship.distance) || (ship.route && ship.route.distance / 1000) || 0;
+               ship.borderCrossings = distKm > 500 ? Math.floor(distKm / 800) : 0;
+             }
+
+             let activeBorderProgresses = ship.borderProgresses || [];
+             if (activeBorderProgresses.length === 0 && ship.borderCrossings > 0) {
+               for (let i = 1; i <= ship.borderCrossings; i++) {
+                 activeBorderProgresses.push(i / (ship.borderCrossings + 1));
+               }
+               // Cache it so we don't recalculate every frame
+               ship.borderProgresses = activeBorderProgresses;
+             }
+
+             if (activeBorderProgresses.length > 0) {
+               for (let bp of activeBorderProgresses) {
+                 if (prevProgress < bp && progress >= bp && !waitState.clearedBorders.includes(bp)) {
+                   progress = bp;
+                   waitState.isWaiting = true;
+                   waitState.waitTimeLeft = 18 * 3600; // 18 hours in simulated seconds
+                   waitState.clearedBorders.push(bp);
+                   break;
+                 }
+               }
+             }
+             simProgressRef.current[ship.id] = progress;
+          }
+        }
+
+        const coords = ship.route.geometry.coordinates;
+        const currentCoord = getCoordinateAlongRoute(coords, progress);
+
+        if (!truckMarkersRef.current[ship.id]) {
+          const el = document.createElement('div');
+          el.className = 'sim-truck-marker';
+          el.innerHTML = `
+            <div class="sim-truck-icon" style="background:${ship.color}">🚚</div>
+            <div class="sim-eta-box">
+              <span class="sim-plate">${ship.truck}</span>
+              <span class="sim-eta">กำลังคำนวณ...</span>
+            </div>
+          `;
+          truckMarkersRef.current[ship.id] = new mapboxgl.Marker({ element: el })
+            .setLngLat(currentCoord)
+            .addTo(map.current);
+        } else {
+          truckMarkersRef.current[ship.id].setLngLat(currentCoord);
+        }
+
+        if (simState.isPlaying) {
+          const markerEl = truckMarkersRef.current[ship.id].getElement();
+          const etaEl = markerEl.querySelector('.sim-eta');
+          const boxEl = markerEl.querySelector('.sim-eta-box');
+
+          if (progress === 1) {
+            etaEl.innerText = '✅ ถึงที่หมายแล้ว';
+            etaEl.style.color = '#00e676';
+            boxEl.style.borderColor = '#00e676';
+          } else {
+            const waitState = simWaitRef.current[ship.id] || { isWaiting: false, waitTimeLeft: 0, clearedBorders: [] };
+            const drivingSecsRemaining = ship.route.duration * (1 - progress);
+            const additionalWaitSecs = waitState.isWaiting ? waitState.waitTimeLeft : 0;
+            const remainingBorders = Math.max(0, (ship.borderCrossings || 0) - waitState.clearedBorders.length);
+            
+            if (waitState.isWaiting) {
+              const waitHrs = Math.floor(waitState.waitTimeLeft / 3600);
+              const waitMins = Math.floor((waitState.waitTimeLeft % 3600) / 60);
+              etaEl.innerHTML = `🛑 รอข้ามด่านชายแดน (${waitHrs} ชม. ${waitMins} นาที)<br/>ETA: ${getRealisticETA(drivingSecsRemaining, remainingBorders, additionalWaitSecs)}`;
+              etaEl.style.color = '#ffca28';
+              boxEl.style.borderColor = '#ffca28';
+            } else if (Math.random() < 0.002 && progress > 0.05 && progress < 0.95) {
+              const delayMin = Math.floor(Math.random() * 120) + 60; // 1-2 hours traffic delay
+              etaEl.innerHTML = `⚠️ จราจรติดขัด +${delayMin} นาที<br/>ETA: ${getRealisticETA(drivingSecsRemaining, remainingBorders, delayMin * 60)}`;
+              etaEl.style.color = '#ff5252';
+              boxEl.style.borderColor = '#ff5252';
+              
+              setTimeout(() => {
+                if (etaEl && boxEl) {
+                  etaEl.style.color = '#fff';
+                  boxEl.style.borderColor = 'rgba(255,255,255,0.2)';
+                }
+              }, 4000);
+            } else if (etaEl.style.color !== 'rgb(255, 82, 82)') {
+              etaEl.innerText = `ETA: ${getRealisticETA(drivingSecsRemaining, remainingBorders)}`;
+            }
+          }
+        }
+      });
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [truckSimStates, shipments]);
 
   useEffect(() => {
     if (map.current) return; // initialize map only once
@@ -406,12 +697,16 @@ function App() {
         {activeTab === 'shipments' && (
           user ? (
             <ShipmentsPanel 
-              shipments={shipments}
-              onRouteFound={handleAddShipment}
-              onToggleShipment={handleToggleShipment}
-              onDeleteShipment={handleDeleteShipment}
-              onClose={() => setActiveTab('live_map')}
-            />
+            shipments={shipments} 
+            onAddShipment={handleAddShipment}
+            onToggleShipment={handleToggleShipment}
+            onDeleteShipment={handleDeleteShipment}
+            truckSimStates={truckSimStates}
+            onToggleSimulation={handleToggleSimulation}
+            onChangeSimSpeed={handleChangeSimSpeed}
+            onResetSimulation={handleResetSimulation}
+            onClose={() => setActiveTab('live_map')}
+          />
           ) : (
             <div className="shipments-panel glassmorphism login-required-panel">
               <div className="empty-state">
