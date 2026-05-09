@@ -39,7 +39,7 @@ const ShipmentsPanel = ({
       const startStr = `${origin.coordinates[0]},${origin.coordinates[1]}`;
       const endStr = `${destination.coordinates[0]},${destination.coordinates[1]}`;
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL || '';
       const res = await fetch(`${apiUrl}/api/routes/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
