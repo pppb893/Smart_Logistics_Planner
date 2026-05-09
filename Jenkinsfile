@@ -26,6 +26,13 @@ spec:
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+    securityContext:
+      runAsUser: 0
 """
         }
     }
@@ -93,7 +100,7 @@ spec:
 
         stage('Deploy to K8s') {
             steps {
-                container('docker') {
+                container('kubectl') {
                     echo 'Deploying to Kubernetes...'
                     sh 'kubectl apply -f k8s/app/namespace.yaml'
                     sh 'kubectl apply -f k8s/app/mysql.yaml'
