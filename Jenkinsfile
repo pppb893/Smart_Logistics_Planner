@@ -121,6 +121,10 @@ spec:
                     sh 'kubectl apply -f k8s/app/frontend.yaml'
                     sh 'kubectl apply -f k8s/app/ingress.yaml'
                     
+                    echo 'Restarting deployments to pull latest image...'
+                    sh 'kubectl rollout restart deployment/backend -n smart-logistics'
+                    sh 'kubectl rollout restart deployment/frontend -n smart-logistics'
+                    
                     echo 'Waiting for deployment to complete...'
                     sh 'kubectl rollout status deployment/backend -n smart-logistics'
                     sh 'kubectl rollout status deployment/frontend -n smart-logistics'
