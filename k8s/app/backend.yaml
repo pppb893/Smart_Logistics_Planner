@@ -30,6 +30,16 @@ spec:
           value: "logistics_db"
         - name: PORT
           value: "5000"
+        - name: MAPBOX_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MAPBOX_TOKEN
+        - name: OPENWEATHER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: OPENWEATHER_KEY
 ---
 apiVersion: v1
 kind: Service
