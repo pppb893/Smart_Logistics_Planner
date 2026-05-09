@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+# Explicitly ensure .env is used during build
 RUN npm run build
 
 # Stage 2: Production stage

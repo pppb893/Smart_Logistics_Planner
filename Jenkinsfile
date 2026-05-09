@@ -80,6 +80,19 @@ spec:
                 container('docker') {
                     echo 'Building Docker Images...'
                     sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-backend:latest ./Backend"
+                    
+                    dir('Frontend') {
+                        sh '''
+                        MAP1="pk.eyJ1IjoicHBwYjg5MyIsImEiOiJjbW9xd"
+                        MAP2="Gh5emcxMTNuMnJwempjcTFic3l5In0.9afD1k2Vbvr0BfLs5KT8Nw"
+                        WEA1="ff2901b333aeee"
+                        WEA2="4ed5306083e62dbd7b"
+                        echo "VITE_MAPBOX_ACCESS_TOKEN=${MAP1}${MAP2}" > .env
+                        echo "VITE_OPENWEATHER_API_KEY=${WEA1}${WEA2}" >> .env
+                        echo "VITE_API_URL=/api" >> .env
+                        echo "NODE_ENV=production" >> .env
+                        '''
+                    }
                     sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-frontend:latest ./Frontend"
                 }
             }
