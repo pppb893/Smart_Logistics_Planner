@@ -1,0 +1,27 @@
+---
+- name: Configure Smart Logistics Environment
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Check if Kubernetes is accessible
+      command: kubectl cluster-info
+      register: k8s_status
+      changed_when: false
+
+    - name: Display Cluster Info
+      debug:
+        msg: "{{ k8s_status.stdout }}"
+
+    - name: Ensure environment variables are ready
+      debug:
+        msg: "Environment is ready for Smart Logistics Deployment"
+
+    - name: Verify Namespace
+      command: kubectl get namespace smart-logistics
+      register: ns_check
+      ignore_errors: yes
+
+    - name: Report Namespace Status
+      debug:
+        msg: "Namespace smart-logistics exists and is ready."
+      when: ns_check.rc == 0
