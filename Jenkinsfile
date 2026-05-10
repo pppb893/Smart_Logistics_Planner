@@ -43,6 +43,7 @@ spec:
     tty: true
     securityContext:
       runAsUser: 0
+  serviceAccountName: jenkins-admin
 """
         }
     }
