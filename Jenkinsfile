@@ -26,6 +26,16 @@ spec:
     env:
     - name: DOCKER_TLS_CERTDIR
       value: ""
+  - name: terraform
+    image: hashicorp/terraform:latest
+    command:
+    - cat
+    tty: true
+  - name: ansible
+    image: alpine/ansible:latest
+    command:
+    - cat
+    tty: true
   - name: kubectl
     image: bitnami/kubectl:latest
     command:
@@ -111,15 +121,34 @@ spec:
             }
         }
 
+        stage('Provision & Configure') {
+            steps {
+                container('terraform') {
+                    echo 'Provisioning Infrastructure with Terraform...'
+                    dir('terraform') {
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve'
+                    }
+                }
+                container('ansible') {
+                    echo 'Configuring Environment with Ansible...'
+                    dir('ansible') {
+                        sh 'ansible-playbook playbook.yml'
+                    }
+                }
+            }
+        }
+
         stage('Deploy to K8s') {
             steps {
                 container('kubectl') {
                     echo 'Deploying to Kubernetes...'
-                    sh 'kubectl apply -f k8s/app/namespace.yaml'
+                    // sh 'kubectl apply -f k8s/app/namespace.yaml' // Managed by Terraform now
                     sh 'kubectl apply -f k8s/app/mysql.yaml'
                     sh 'kubectl apply -f k8s/app/backend.yaml'
                     sh 'kubectl apply -f k8s/app/frontend.yaml'
                     sh 'kubectl apply -f k8s/app/ingress.yaml'
+                    sh 'kubectl apply -f k8s/app/monitoring.yaml'
                     
                     echo 'Restarting deployments to pull latest image...'
                     sh 'kubectl rollout restart deployment/backend -n smart-logistics'
