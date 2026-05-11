@@ -21,7 +21,7 @@ resource "kubernetes_namespace_v1" "logistics_ns" {
 resource "kubernetes_persistent_volume_claim_v1" "mysql_pvc" {
   wait_until_bound = false
   metadata {
-    name      = "mysql-pv-claim"
+    name      = "mysql-pvc"
     namespace = kubernetes_namespace_v1.logistics_ns.metadata[0].name
   }
   spec {
@@ -32,4 +32,29 @@ resource "kubernetes_persistent_volume_claim_v1" "mysql_pvc" {
       }
     }
   }
+}
+
+# 3. สร้าง Secret สำหรับ API Keys
+resource "kubernetes_secret_v1" "app_secrets" {
+  metadata {
+    name      = "app-secrets"
+    namespace = kubernetes_namespace_v1.logistics_ns.metadata[0].name
+  }
+
+  data = {
+    MAPBOX_TOKEN    = var.mapbox_token
+    OPENWEATHER_KEY = var.openweather_key
+  }
+
+  type = "Opaque"
+}
+
+variable "mapbox_token" {
+  type      = string
+  sensitive = true
+}
+
+variable "openweather_key" {
+  type      = string
+  sensitive = true
 }
