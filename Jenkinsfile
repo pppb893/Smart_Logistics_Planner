@@ -134,7 +134,10 @@ spec:
                 container('ansible') {
                     echo 'Configuring Environment with Ansible...'
                     dir('ansible') {
-                        sh 'ansible-playbook playbook.yml'
+                        sh '''
+                            apk add --no-cache kubectl
+                            ansible-playbook playbook.yml
+                        '''
                     }
                 }
             }
