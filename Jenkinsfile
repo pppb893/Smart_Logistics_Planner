@@ -128,7 +128,7 @@ spec:
                     echo 'Provisioning Infrastructure with Terraform...'
                     dir('terraform') {
                         sh 'terraform init'
-                        sh 'terraform apply -auto-approve'
+                        sh "terraform apply -auto-approve -var='mapbox_token=${MAPBOX_TOKEN}' -var='openweather_key=${OPENWEATHER_KEY}'"
                     }
                 }
                 container('ansible') {
