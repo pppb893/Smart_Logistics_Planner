@@ -19,6 +19,7 @@ resource "kubernetes_namespace_v1" "logistics_ns" {
 
 # 2. จัดการ Persistent Volume Claim ผ่าน Terraform (IaC)
 resource "kubernetes_persistent_volume_claim_v1" "mysql_pvc" {
+  wait_until_bound = false
   metadata {
     name      = "mysql-pv-claim"
     namespace = kubernetes_namespace_v1.logistics_ns.metadata[0].name
