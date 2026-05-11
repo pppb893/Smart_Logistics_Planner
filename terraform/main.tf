@@ -1,5 +1,13 @@
+terraform {
+  backend "kubernetes" {
+    secret_suffix = "state"
+    namespace     = "jenkins"
+    # ใช้ In-cluster auth อัตโนมัติ
+  }
+}
+
 provider "kubernetes" {
-  # Leave empty to use in-cluster config when running inside Jenkins Agent Pod
+  # Leave empty for in-cluster auth
 }
 
 # 1. สร้าง Namespace สำหรับโปรเจค
