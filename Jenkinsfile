@@ -163,6 +163,9 @@ spec:
                     echo 'Waiting for deployment to complete...'
                     sh 'kubectl rollout status deployment/backend -n smart-logistics'
                     sh 'kubectl rollout status deployment/frontend -n smart-logistics'
+                    sh 'docker build -t nopparujjia/smart-logistics-frontend:latest ./Frontend'
+                    sh 'docker push nopparujjia/smart-logistics-frontend:latest'
+                    sh 'kubectl rollout restart deployment/frontend -n smart-logistics'
                 }
             }
         }
