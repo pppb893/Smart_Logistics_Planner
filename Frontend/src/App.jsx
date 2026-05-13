@@ -621,7 +621,7 @@ function App() {
       <div className="top-bar">
         <div className="top-bar-left">
           <Package className="icon" size={28} />
-          <h1>Smart Logistics</h1>
+          <h1>Smart Logistics System</h1>
         </div>
         <div className="top-bar-nav">
           <a 
