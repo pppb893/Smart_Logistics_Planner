@@ -16,6 +16,13 @@ spec:
             name: backend
             port:
               number: 5000
+      - path: /github-webhook
+        pathType: Prefix
+        backend:
+          service:
+            name: jenkins-bridge
+            port:
+              number: 8080
       - path: /
         pathType: Prefix
         backend:
