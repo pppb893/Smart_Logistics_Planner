@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Bash(kubectl version *)",
+      "Bash(kubectl config *)",
+      "Bash(kubectl *)",
+      "Bash(docker info *)",
+      "PowerShell(docker info *)",
+      "Bash(docker build *)",
+      "Bash(docker push *)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}
