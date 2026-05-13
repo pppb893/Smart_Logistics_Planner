@@ -163,11 +163,28 @@ spec:
                     echo 'Waiting for deployment to complete...'
                     sh 'kubectl rollout status deployment/backend -n smart-logistics'
                     sh 'kubectl rollout status deployment/frontend -n smart-logistics'
-                    sh 'docker build -t nopparujjia/smart-logistics-frontend:latest ./Frontend'
-                    sh 'docker push nopparujjia/smart-logistics-frontend:latest'
-                    sh 'kubectl rollout restart deployment/frontend -n smart-logistics'
                 }
             }
         }
     }
+    stage('Docker Build Push') {
+            steps {
+                container('docker') {
+                    echo 'Building and Pushing Images to Docker Hub...'
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CRED}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "docker build -t nopparujjia/smart-logistics-frontend:latest ./Frontend"
+                        sh "docker push nopparujjia/smart-logistics-frontend:latest"
+                    }
+                }
+            }
+        }
+        stage('Deploy to K8s Frontend') {
+            steps {
+                container('kubectl') {
+                    echo 'Deploying to Kubernetes...'
+                    sh 'kubectl rollout restart deployment/frontend -n smart-logistics'
+                }
+            }
+        }
+
 }
