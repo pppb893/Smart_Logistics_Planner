@@ -108,7 +108,7 @@ function App() {
       return;
     }
     const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
     fetch(`${apiUrl}/api/shipments`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -257,7 +257,7 @@ function App() {
     // Persist to DB
     try {
       const token = localStorage.getItem('token');
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
       await fetch(`${apiUrl}/api/shipments`, {
         method: 'POST',
         headers: {
@@ -278,7 +278,7 @@ function App() {
       ship.id === id ? { ...ship, visible: !ship.visible } : ship
     ));
     const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
     fetch(`${apiUrl}/api/shipments/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}` }
@@ -296,7 +296,7 @@ function App() {
     delete simProgressRef.current[id];
 
     const token = localStorage.getItem('token');
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '');
     fetch(`${apiUrl}/api/shipments/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
