@@ -1,0 +1,47 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "smart-logistics-custom",
+    "title": "Backend Live Metrics (Auto-generated)",
+    "tags": ["nodejs", "backend"],
+    "timezone": "browser",
+    "refresh": "5s",
+    "schemaVersion": 16,
+    "panels": [
+      {
+        "type": "timeseries",
+        "title": "CPU Usage (Seconds/sec)",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "rate(process_cpu_user_seconds_total{job=\"backend\"}[1m])",
+            "legendFormat": "CPU User Rate"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Memory Usage (Bytes)",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"backend\"}",
+            "legendFormat": "Memory (RSS)"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "HTTP Requests (per second)",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"backend\"}[1m])",
+            "legendFormat": "{{method}} {{route}} ({{status_code}})"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}

@@ -10,6 +10,13 @@ export default defineConfig({
     allowedHosts: 'all',
     watch: {
       usePolling: true
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })
