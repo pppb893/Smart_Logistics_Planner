@@ -90,7 +90,7 @@ spec:
             steps {
                 container('docker') {
                     echo 'Building Docker Images...'
-                    sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-backend:latest ./Backend"
+                    sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-backend:${env.BUILD_NUMBER} -t ${DOCKER_HUB_USER}/smart-logistics-backend:latest ./Backend"
                     
                     withCredentials([string(credentialsId: 'MAPBOX_TOKEN', variable: 'MAPBOX'),
                                     string(credentialsId: 'OPENWEATHER_KEY', variable: 'WEATHER')]) {
@@ -103,7 +103,7 @@ spec:
                             """
                         }
                     }
-                    sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-frontend:latest ./Frontend"
+                    sh "docker build -t ${DOCKER_HUB_USER}/smart-logistics-frontend:${env.BUILD_NUMBER} -t ${DOCKER_HUB_USER}/smart-logistics-frontend:latest ./Frontend"
                 }
             }
         }
@@ -114,7 +114,9 @@ spec:
                     echo 'Pushing Images to Docker Hub...'
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CRED}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        sh "docker push ${DOCKER_HUB_USER}/smart-logistics-backend:${env.BUILD_NUMBER}"
                         sh "docker push ${DOCKER_HUB_USER}/smart-logistics-backend:latest"
+                        sh "docker push ${DOCKER_HUB_USER}/smart-logistics-frontend:${env.BUILD_NUMBER}"
                         sh "docker push ${DOCKER_HUB_USER}/smart-logistics-frontend:latest"
                     }
                 }
@@ -151,7 +153,9 @@ spec:
                     echo 'Deploying to Kubernetes...'
                     // sh 'kubectl apply -f k8s/app/namespace.yaml' // Managed by Terraform now
                     sh 'kubectl apply -f k8s/app/mysql.yaml'
+                    sh "sed -i 's|image: nopparujjia/smart-logistics-backend:latest|image: nopparujjia/smart-logistics-backend:${env.BUILD_NUMBER}|g' k8s/app/backend.yaml"
                     sh 'kubectl apply -f k8s/app/backend.yaml'
+                    sh "sed -i 's|image: nopparujjia/smart-logistics-frontend:latest|image: nopparujjia/smart-logistics-frontend:${env.BUILD_NUMBER}|g' k8s/app/frontend.yaml"
                     sh 'kubectl apply -f k8s/app/frontend.yaml'
                     sh 'kubectl apply -f k8s/app/ingress.yaml'
                     sh 'kubectl apply -f k8s/app/monitoring.yaml'
