@@ -25,37 +25,66 @@
 - **คำอธิบาย:** ระบบช่วยวางแผนการขนส่งสินค้า จัดการเส้นทาง และติดตามสถานะการจัดส่งแบบ Real-time โดยใช้เทคโนโลยี Mapbox สำหรับการแสดงผลแผนที่
 
 ### Architecture Diagram
+**1. Application Architecture (ระบบการทำงานหลัก)**
+```text
+                          ┌─────────────────┐
+                          │   Mapbox API    │
+                          └────────▲────────┘
+                                   │ Map Data
+┌──────────────┐          ┌────────┴────────┐          ┌─────────────────┐
+│              │   HTTP   │                 │   REST   │                 │
+│ User Browser ├─────────▶│    Frontend     ├─────────▶│     Backend     │
+│              │          │  (React/Vite)   │   API    │(Node.js/Express)│
+└──────────────┘          └─────────────────┘          └────────┬────────┘
+                                                                │
+                          ┌─────────────────┐                   │
+                          │ OpenWeather API │◀──────────────────┤
+                          └─────────────────┘     Weather       │ SQL
+                                                   Data         │
+                                                       ┌────────▼────────┐
+                                                       │                 │
+                                                       │ MySQL Database  │
+                                                       │                 │
+                                                       └─────────────────┘
 ```
-Developer
-    │
-    ▼  git push
- GitHub ──── webhook ────▶ Jenkins CI/CD
-                                │
-                    ┌───────────┼───────────┐
-                    ▼           ▼           ▼
-                 Build        Test      Docker Build
-                                            │
-                                            ▼
-                                       Docker Hub
-                                            │
-                                    ┌───────┴───────┐
-                                    ▼               ▼
-                                Terraform        Ansible
-                                    │               │
-                                    └───────┬───────┘
-                                            ▼
-                                   Kubernetes Cluster
-                                   ┌────────────────┐
-                                   │  Pod 1  Pod 2  │
-                                   │  [App]  [App]  │
-                                   │                │
-                                   │  Service (NodePort :XXXXX)  │
-                                   └────────────────┘
-                                            │
-                              ┌─────────────┴──────────────┐
-                              ▼                             ▼
-                          Prometheus  ──────────────▶  Grafana
-                        (scrape /metrics)            (dashboard)
+
+**2. Deployment & CI/CD Pipeline (ระบบ CI/CD และ Infrastructure)**
+```text
+ Developer
+     │
+     ▼ git push
+  GitHub ──── webhook ────▶ Jenkins CI/CD Pipeline
+                                 │
+                     ┌───────────┼───────────┐
+                     ▼           ▼           ▼
+                  Build        Test      Docker Build
+                                             │
+                                             ▼
+                                        Docker Hub
+                                    - backend image
+                                    - frontend image
+                                             │
+                                     ┌───────┴───────┐
+                                     ▼               ▼
+                                 Terraform        Ansible
+                             (Infrastructure)  (Configuration)
+                                     │               │
+                                     └───────┬───────┘
+                                             ▼
+                                    Kubernetes Cluster
+                     ┌────────────────────────────────────────────────┐
+                     │          Service (NodePort / ClusterIP)        │
+                     ├───────────────────────┬────────────────────────┤
+                     │     Frontend Pods     │      Backend Pods      │
+                     │       (React)         │       (Node.js)        │
+                     ├───────────────────────┴────────────────────────┤
+                     │                 MySQL Database                 │
+                     └───────────────────────┬────────────────────────┘
+                                             │
+                               ┌─────────────┴──────────────┐
+                               ▼                            ▼
+                           Prometheus ───────────────▶   Grafana
+                        (Scrape /metrics)              (Dashboard)
 ```
 
 ---
